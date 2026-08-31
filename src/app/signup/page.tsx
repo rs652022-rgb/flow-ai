@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
@@ -34,17 +33,9 @@ export default function SignupPage() {
         return;
       }
 
-      const signInResult = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        router.push("/login?registered=true");
-      } else {
-        router.push("/dashboard");
-      }
+      // Session cookie is already set by the signup API
+      // Just redirect to dashboard
+      router.push("/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);
@@ -55,20 +46,9 @@ export default function SignupPage() {
     setError("");
     setLoading(true);
     try {
-      const result = await signIn(provider, { callbackUrl: "/dashboard", redirect: false });
-      if (result?.error) {
-        // Check if it's a configuration error (missing credentials)
-        if (result.error === "Configuration" || result.error.includes("OAuth")) {
-          setError(
-            `${provider === "google" ? "Google" : "Instagram"} sign-in is not configured yet. ` +
-            `Add your OAuth credentials to the .env file. ` +
-            `See /setup for instructions.`
-          );
-        } else {
-          setError(`Could not sign in with ${provider === "google" ? "Google" : "Instagram"}. Please try again.`);
-        }
-        setLoading(false);
-      }
+      // Use window.location to do a full page redirect for OAuth
+      // This ensures cookies are properly set
+      window.location.href = `/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent("/dashboard")}`;
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);

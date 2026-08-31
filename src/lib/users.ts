@@ -10,9 +10,11 @@ export interface UserRecord {
   createdAt: string;
 }
 
-// In-memory user store — works on Vercel (no filesystem writes)
-// Data persists across requests within the same serverless instance
-const users: UserRecord[] = [];
+// Shared in-memory user array
+// On Vercel, each serverless instance has its own copy.
+// Users created in one request are available in subsequent requests
+// ONLY within the same serverless instance (same warm instance).
+export const users: UserRecord[] = [];
 
 export async function createUser(data: {
   name: string;

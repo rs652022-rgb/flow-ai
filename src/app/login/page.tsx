@@ -45,24 +45,9 @@ function LoginForm() {
   const handleOAuthSignIn = async (provider: "google" | "instagram") => {
     setError("");
     setLoading(true);
-    try {
-      const result = await signIn(provider, { callbackUrl: "/dashboard", redirect: false });
-      if (result?.error) {
-        if (result.error === "Configuration" || result.error.includes("OAuth")) {
-          setError(
-            `${provider === "google" ? "Google" : "Instagram"} sign-in is not configured yet. ` +
-            `Add your OAuth credentials to the .env file. ` +
-            `See /setup for instructions.`
-          );
-        } else {
-          setError(`Could not sign in with ${provider === "google" ? "Google" : "Instagram"}. Please try again.`);
-        }
-        setLoading(false);
-      }
-    } catch {
-      setError("Something went wrong. Please try again.");
-      setLoading(false);
-    }
+    // Use full page redirect for OAuth — this is the most reliable approach
+    // It avoids CSRF issues and ensures cookies are properly set
+    window.location.href = `/api/auth/signin/${provider}?callbackUrl=${encodeURIComponent("/dashboard")}`;
   };
 
   const getAuthErrorMessage = () => {
