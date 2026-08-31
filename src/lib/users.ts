@@ -1,9 +1,4 @@
-import fs from "fs";
-import path from "path";
 import bcrypt from "bcryptjs";
-
-const DATA_DIR = path.join(process.cwd(), "data");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
 
 export interface UserRecord {
   id: string;
@@ -15,37 +10,15 @@ export interface UserRecord {
   createdAt: string;
 }
 
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(USERS_FILE)) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify([], null, 2));
-  }
-}
-
-function readUsers(): UserRecord[] {
-  ensureDataDir();
-  try {
-    const data = fs.readFileSync(USERS_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-function writeUsers(users: UserRecord[]) {
-  ensureDataDir();
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
+// In-memory user store — works on Vercel (no filesystem writes)
+// Data persists across requests within the same serverless instance
+const users: UserRecord[] = [];
 
 export async function createUser(data: {
   name: string;
   email: string;
   password: string;
 }): Promise<UserRecord> {
-  const users = readUsers();
-
   const existing = users.find(
     (u) => u.email.toLowerCase() === data.email.toLowerCase()
   );
@@ -63,19 +36,16 @@ export async function createUser(data: {
   };
 
   users.push(user);
-  writeUsers(users);
   return { ...user, password: undefined };
 }
 
 export async function getUserByEmail(email: string): Promise<UserRecord | null> {
-  const users = readUsers();
   return (
     users.find((u) => u.email.toLowerCase() === email.toLowerCase()) || null
   );
 }
 
 export async function getUserById(id: string): Promise<UserRecord | null> {
-  const users = readUsers();
   return users.find((u) => u.id === id) || null;
 }
 
