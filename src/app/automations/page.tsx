@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const templates = [
   { name: "Comment to DM — Link", trigger: "Comment", keyword: "LINK", message: "Hey! Here's the link you asked for 👇", icon: "🔗", popular: true },
