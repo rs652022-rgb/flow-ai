@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
 
 const useCases = [
   { name: "Comment-to-DM", href: "/features#comment-to-dm", desc: "Auto-reply to comments with a DM" },
@@ -20,6 +21,7 @@ const creatorTypes = [
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const { data: session } = useSession();
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-white/20">
@@ -113,17 +115,58 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Desktop CTA */}
+          {/* Desktop Auth CTA */}
           <div className="hidden lg:flex items-center gap-3">
-            <Link href="/login" className="px-4 py-2 text-sm font-medium text-[#636E72] hover:text-[#2D3436] transition-colors">
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#6C5CE7] to-[#A29BFE] rounded-full hover:shadow-lg hover:shadow-[#6C5CE7]/25 transition-all duration-300 hover:scale-105"
-            >
-              Get Started Free
-            </Link>
+            {session?.user ? (
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/dashboard"
+                  className="px-4 py-2 text-sm font-medium text-[#636E72] hover:text-[#2D3436] transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <div className="relative group">
+                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-100 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6C5CE7] to-[#A29BFE] flex items-center justify-center text-white text-sm font-bold">
+                      {session.user.name?.charAt(0)?.toUpperCase() || "U"}
+                    </div>
+                    <span className="text-sm font-medium text-[#2D3436] max-w-[100px] truncate">
+                      {session.user.name || "User"}
+                    </span>
+                  </button>
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <div className="text-xs text-[#B2BEC3]">Signed in as</div>
+                      <div className="text-sm font-medium text-[#2D3436] truncate">{session.user.email}</div>
+                    </div>
+                    <Link href="/dashboard" className="block px-4 py-2 text-sm text-[#636E72] hover:bg-gray-50">
+                      Dashboard
+                    </Link>
+                    <Link href="/automations" className="block px-4 py-2 text-sm text-[#636E72] hover:bg-gray-50">
+                      Automations
+                    </Link>
+                    <button
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                      className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 border-t border-gray-100 mt-1"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Link href="/login" className="px-4 py-2 text-sm font-medium text-[#636E72] hover:text-[#2D3436] transition-colors">
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#6C5CE7] to-[#A29BFE] rounded-full hover:shadow-lg hover:shadow-[#6C5CE7]/25 transition-all duration-300 hover:scale-105"
+                >
+                  Get Started Free
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -169,16 +212,32 @@ export default function Header() {
                 Pricing
               </Link>
               <div className="border-t border-gray-100 my-2" />
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="px-4 py-2 text-sm text-[#636E72] hover:text-[#2D3436] hover:bg-gray-50 rounded-lg transition-colors">
-                Login
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setMobileOpen(false)}
-                className="mx-4 mt-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#6C5CE7] to-[#A29BFE] rounded-full text-center hover:shadow-lg transition-all"
-              >
-                Get Started Free
-              </Link>
+              {session?.user ? (
+                <>
+                  <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="px-4 py-2 text-sm text-[#636E72] hover:text-[#2D3436] hover:bg-gray-50 rounded-lg transition-colors">
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => { signOut({ callbackUrl: "/" }); setMobileOpen(false); }}
+                    className="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors text-left"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" onClick={() => setMobileOpen(false)} className="px-4 py-2 text-sm text-[#636E72] hover:text-[#2D3436] hover:bg-gray-50 rounded-lg transition-colors">
+                    Login
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={() => setMobileOpen(false)}
+                    className="mx-4 mt-2 px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#6C5CE7] to-[#A29BFE] rounded-full text-center hover:shadow-lg transition-all"
+                  >
+                    Get Started Free
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}
