@@ -1,14 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { jwtVerify } from "jose";
+
+const secret = new TextEncoder().encode(
+  process.env.NEXTAUTH_SECRET || "flow-ai-dev-secret-change-in-production"
+);
+
+async function getTokenFromCookie(req: NextRequest): Promise<boolean> {
+  // Check both dev and production cookie names
+  const token =
+    req.cookies.get("authjs.session-token")?.value ||
+    req.cookies.get("__Secure-authjs.session-token")?.value;
+
+  if (!token) return false;
+
+  try {
+    // Verify the HS256 JWT using jose (Edge-compatible)
+    const { payload } = await jwtVerify(token, secret);
+    return !!(payload && payload.id);
+  } catch {
+    return false;
+  }
+}
 
 export async function middleware(req: NextRequest) {
-  const token = await getToken({
-    req,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
+  const isLoggedIn = await getTokenFromCookie(req);
 
-  const isLoggedIn = !!token;
-  const isAuthPage = req.nextUrl.pathname === "/login" || req.nextUrl.pathname === "/signup";
+  const isAuthPage =
+    req.nextUrl.pathname === "/login" || req.nextUrl.pathname === "/signup";
   const isProtectedPage =
     req.nextUrl.pathname.startsWith("/dashboard") ||
     req.nextUrl.pathname.startsWith("/automations");

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { encode } from "next-auth/jwt";
+import { SignJWT } from "jose";
 import { createUser } from "@/lib/users";
 
-const SECRET = process.env.NEXTAUTH_SECRET || "flow-ai-dev-secret-change-in-production";
+const secret = new TextEncoder().encode(
+  process.env.NEXTAUTH_SECRET || "flow-ai-dev-secret-change-in-production"
+);
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,19 +36,16 @@ export async function POST(req: NextRequest) {
     // Create user
     const user = await createUser({ name, email, password });
 
-    // Create a JWT using NextAuth's encode function
-    // This ensures the token format matches exactly what NextAuth expects
-    const token = await encode({
-      secret: SECRET,
-      token: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        picture: null,
-        sub: user.id,
-      },
-      salt: "authjs.session-token",
-    });
+    // Create a plain HS256 JWT using jose (Edge-compatible)
+    const token = await new SignJWT({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("30d")
+      .sign(secret);
 
     const response = NextResponse.json(
       {
@@ -56,7 +55,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
 
-    // Set the session cookie using the same name NextAuth v5 uses
+    // Set the session cookie
     response.cookies.set("authjs.session-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -65,7 +64,6 @@ export async function POST(req: NextRequest) {
       maxAge: 30 * 24 * 60 * 60, // 30 days
     });
 
-    // Set secure cookie for production
     if (process.env.NODE_ENV === "production") {
       response.cookies.set("__Secure-authjs.session-token", token, {
         httpOnly: true,
